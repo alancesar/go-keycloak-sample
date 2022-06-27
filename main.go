@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/alancesar/go-keycloak-sample/infra/nonce"
 	"github.com/alancesar/go-keycloak-sample/internal/jwt"
+	"github.com/alancesar/go-keycloak-sample/internal/nonce"
 	"github.com/alancesar/go-keycloak-sample/pkg"
 	"github.com/alancesar/go-keycloak-sample/presenter/handler"
 	"github.com/alancesar/go-keycloak-sample/presenter/middleware"
