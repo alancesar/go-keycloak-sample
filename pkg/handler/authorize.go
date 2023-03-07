@@ -14,7 +14,7 @@ const (
 	idTokenKey = "id_token"
 )
 
-func Authorize(config oauth2.Config, handler presenter.Verifier) http.HandlerFunc {
+func Authorize(config oauth2.Config, handler presenter.TokenParser) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		state := r.URL.Query().Get(stateKey)
 		if !cookieMatches(r, stateKey, state) {
@@ -34,7 +34,7 @@ func Authorize(config oauth2.Config, handler presenter.Verifier) http.HandlerFun
 			return
 		}
 
-		token, err := handler.Verify(r.Context(), rawIDToken)
+		token, err := handler.Parse(r.Context(), rawIDToken)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return

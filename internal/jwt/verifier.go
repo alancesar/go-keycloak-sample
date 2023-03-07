@@ -41,7 +41,7 @@ func NewVerifier(verifier *oidc.IDTokenVerifier) *Verifier {
 	}
 }
 
-func (v Verifier) Verify(ctx context.Context, rawToken string) (Token, error) {
+func (v Verifier) Parse(ctx context.Context, rawToken string) (Token, error) {
 	idToken, err := v.Verifier.Verify(ctx, rawToken)
 	if err != nil {
 		return Token{}, fmt.Errorf("[%w] invalid token", pkg.ErrInvalidCredentials)

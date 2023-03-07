@@ -6,7 +6,7 @@ import (
 )
 
 type (
-	Verifier interface {
-		Verify(ctx context.Context, rawToken string) (jwt.Token, error)
+	TokenParser interface {
+		Parse(ctx context.Context, rawToken string) (jwt.Token, error)
 	}
 )

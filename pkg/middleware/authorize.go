@@ -13,11 +13,11 @@ const (
 	bearerPrefix     = "Bearer"
 )
 
-func Authorize(verifier presenter.Verifier) func(next http.Handler) http.Handler {
+func Authorize(verifier presenter.TokenParser) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			rawAccessToken := extractAuthorization(r)
-			token, err := verifier.Verify(r.Context(), rawAccessToken)
+			token, err := verifier.Parse(r.Context(), rawAccessToken)
 			if err != nil {
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
