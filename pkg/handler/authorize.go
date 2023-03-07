@@ -2,7 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"github.com/alancesar/go-keycloak-sample/presenter"
+	"github.com/alancesar/go-keycloak-sample/pkg/jwt"
 	"golang.org/x/oauth2"
 	"net/http"
 )
@@ -14,7 +14,7 @@ const (
 	idTokenKey = "id_token"
 )
 
-func Authorize(config oauth2.Config, handler presenter.TokenParser) http.HandlerFunc {
+func Authorize(config oauth2.Config, handler jwt.TokenParser) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		state := r.URL.Query().Get(stateKey)
 		if !cookieMatches(r, stateKey, state) {
