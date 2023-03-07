@@ -2,7 +2,6 @@ package handler
 
 import (
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
 	"net/http"
 	"time"
@@ -12,14 +11,14 @@ type (
 	RandomStringFn func() string
 )
 
-func Login(fn RandomStringFn, config oauth2.Config) gin.HandlerFunc {
-	return func(c *gin.Context) {
+func Login(fn RandomStringFn, config oauth2.Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		state := fn()
 		nonce := fn()
-		setCookie(c.Writer, c.Request, "state", state)
-		setCookie(c.Writer, c.Request, "nonce", nonce)
+		setCookie(w, r, "state", state)
+		setCookie(w, r, "nonce", nonce)
 
-		c.Redirect(http.StatusFound, config.AuthCodeURL(state, oidc.Nonce(nonce)))
+		http.Redirect(w, r, config.AuthCodeURL(state, oidc.Nonce(nonce)), http.StatusFound)
 	}
 }
 

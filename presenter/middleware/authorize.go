@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/alancesar/go-keycloak-sample/pkg"
 	"github.com/alancesar/go-keycloak-sample/presenter"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strings"
 )
@@ -14,19 +13,21 @@ const (
 	bearerPrefix     = "Bearer"
 )
 
-func Authorize(verifier presenter.Verifier) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		ctx := c.Request.Context()
+func Authorize(verifier presenter.Verifier) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			rawAccessToken := extractAuthorization(r)
+			token, err := verifier.Verify(r.Context(), rawAccessToken)
+			if err != nil {
+				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+				return
+			}
 
-		rawAccessToken := extractAuthorization(c.Request)
-		token, err := verifier.Verify(ctx, rawAccessToken)
-		if err != nil {
-			_ = c.AbortWithError(http.StatusUnauthorized, err)
-			return
+			ctx := context.WithValue(r.Context(), pkg.Claims, token.Claims)
+			r = r.WithContext(ctx)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		}
-
-		ctx = context.WithValue(ctx, pkg.Claims, token.Claims)
-		c.Request = c.Request.WithContext(ctx)
+		return http.HandlerFunc(fn)
 	}
 }
 

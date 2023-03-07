@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/alancesar/go-keycloak-sample/internal/jwt"
 	"github.com/alancesar/go-keycloak-sample/internal/nonce"
@@ -9,7 +10,7 @@ import (
 	"github.com/alancesar/go-keycloak-sample/presenter/handler"
 	"github.com/alancesar/go-keycloak-sample/presenter/middleware"
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
 	"golang.org/x/oauth2"
 	"log"
 	"net/http"
@@ -52,16 +53,24 @@ func main() {
 		return nonce.New(nonceLength, nonceDefaultValue)
 	}
 
-	engine := gin.Default()
-	engine.Handle(http.MethodGet, "/", handler.Login(randomStringFn, config))
-	engine.Handle(http.MethodGet, callbackPath, handler.Authorize(config, verifier))
-	engine.Handle(http.MethodGet, "/details", middleware.Authorize(verifier), func(c *gin.Context) {
-		claims := c.Request.Context().Value(pkg.Claims).(jwt.Claims)
-		c.JSON(http.StatusOK, claims)
+	mux := chi.NewMux()
+	mux.Get("/", handler.Login(randomStringFn, config))
+	mux.Get(callbackPath, handler.Authorize(config, verifier))
+	mux.Route("/details", func(r chi.Router) {
+		r.Use(middleware.Authorize(verifier))
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			claims := r.Context().Value(pkg.Claims).(jwt.Claims)
+			bytes, err := json.Marshal(claims)
+			if err != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+			_, _ = w.Write(bytes)
+		})
 	})
 
 	server := &http.Server{
-		Handler: engine,
+		Handler: mux,
 		Addr:    serverAddr,
 	}
 
