@@ -2,11 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"github.com/alancesar/go-keycloak-sample/internal/jwt"
-	"github.com/alancesar/go-keycloak-sample/pkg"
-	handler2 "github.com/alancesar/go-keycloak-sample/pkg/handler"
+	"github.com/alancesar/go-keycloak-sample/pkg/handler"
 	"github.com/alancesar/go-keycloak-sample/pkg/middleware"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/go-chi/chi/v5"
@@ -16,14 +12,9 @@ import (
 	"os"
 )
 
-const (
-	callbackPath = "/auth/callback"
-)
-
 var (
-	clientID   = os.Getenv("CLIENT_ID")
-	issuer     = os.Getenv("ISSUER")
-	serverAddr = os.Getenv("SERVER_ADDRESS")
+	clientID = os.Getenv("CLIENT_ID")
+	issuer   = os.Getenv("ISSUER")
 )
 
 func main() {
@@ -36,35 +27,26 @@ func main() {
 	config := oauth2.Config{
 		ClientID:    clientID,
 		Endpoint:    provider.Endpoint(),
-		RedirectURL: fmt.Sprintf("http://localhost%s%s", serverAddr, callbackPath),
+		RedirectURL: "http://localhost:9090/auth/callback",
 		Scopes:      []string{oidc.ScopeOpenID, "profile", "email"},
 	}
 
-	oidcConfig := &oidc.Config{
-		ClientID: clientID,
-	}
-
-	verifier := jwt.NewVerifier(provider.Verifier(oidcConfig))
+	verifier := provider.Verifier(&oidc.Config{
+		ClientID:          clientID,
+		SkipClientIDCheck: true,
+	})
 
 	mux := chi.NewMux()
-	mux.Get("/", handler2.Login(config))
-	mux.Get(callbackPath, handler2.Authorize(config, verifier))
+	mux.Get("/", handler.Login(config))
+	mux.Get("/auth/callback", handler.Callback(config, verifier))
 	mux.Route("/details", func(r chi.Router) {
 		r.Use(middleware.Authorize(verifier))
-		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			claims := r.Context().Value(pkg.Claims).(jwt.Claims)
-			bytes, err := json.Marshal(claims)
-			if err != nil {
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				return
-			}
-			_, _ = w.Write(bytes)
-		})
+		r.Get("/", handler.Details)
 	})
 
 	server := &http.Server{
 		Handler: mux,
-		Addr:    serverAddr,
+		Addr:    ":9090",
 	}
 
 	if err := server.ListenAndServe(); err != http.ErrServerClosed {

@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"context"
-	"github.com/alancesar/go-keycloak-sample/pkg"
 	"github.com/alancesar/go-keycloak-sample/pkg/jwt"
+	"github.com/coreos/go-oidc/v3/oidc"
 	"net/http"
 	"strings"
 )
@@ -13,17 +13,18 @@ const (
 	bearerPrefix     = "Bearer"
 )
 
-func Authorize(verifier jwt.TokenParser) func(next http.Handler) http.Handler {
+func Authorize(verifier *oidc.IDTokenVerifier) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
 			rawAccessToken := extractAuthorization(r)
-			token, err := verifier.Parse(r.Context(), rawAccessToken)
+			idToken, err := verifier.Verify(ctx, rawAccessToken)
 			if err != nil {
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), pkg.Claims, token.Claims)
+			ctx = context.WithValue(ctx, jwt.TokenKey, idToken)
 			r = r.WithContext(ctx)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}

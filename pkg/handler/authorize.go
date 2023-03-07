@@ -2,7 +2,8 @@ package handler
 
 import (
 	"encoding/json"
-	"github.com/alancesar/go-keycloak-sample/pkg/jwt"
+	"errors"
+	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 	"net/http"
 )
@@ -14,38 +15,28 @@ const (
 	idTokenKey = "id_token"
 )
 
-func Authorize(config oauth2.Config, handler jwt.TokenParser) http.HandlerFunc {
+func Callback(config oauth2.Config, verifier *oidc.IDTokenVerifier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		state := r.URL.Query().Get(stateKey)
-		if !cookieMatches(r, stateKey, state) {
+		ctx := r.Context()
+
+		if err := validateState(r); err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
 
-		oauth2Token, err := config.Exchange(r.Context(), r.URL.Query().Get(codeKey))
+		code := r.URL.Query().Get(codeKey)
+		token, err := config.Exchange(ctx, code)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
 
-		rawIDToken, ok := oauth2Token.Extra(idTokenKey).(string)
-		if !ok {
+		if err := validateToken(r, token, verifier); err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
 
-		token, err := handler.Parse(r.Context(), rawIDToken)
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			return
-		}
-
-		if !cookieMatches(r, nonceKey, token.Nonce) {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			return
-		}
-
-		bytes, err := json.Marshal(oauth2Token)
+		bytes, err := json.Marshal(token)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
@@ -56,11 +47,29 @@ func Authorize(config oauth2.Config, handler jwt.TokenParser) http.HandlerFunc {
 	}
 }
 
-func cookieMatches(r *http.Request, name, target string) bool {
-	cookie, err := r.Cookie(name)
-	if err != nil {
-		return false
+func validateState(r *http.Request) error {
+	state := r.URL.Query().Get(stateKey)
+	if cookie, err := r.Cookie(stateKey); err != nil || cookie.Value != state {
+		return errors.New("state does not matche")
 	}
 
-	return cookie.Value == target
+	return nil
+}
+
+func validateToken(r *http.Request, token *oauth2.Token, verifier *oidc.IDTokenVerifier) error {
+	rawIDToken, ok := token.Extra(idTokenKey).(string)
+	if !ok {
+		return errors.New("invalid token")
+	}
+
+	idToken, err := verifier.Verify(r.Context(), rawIDToken)
+	if err != nil {
+		return err
+	}
+
+	if cookie, err := r.Cookie(nonceKey); err != nil || cookie.Value != idToken.Nonce {
+		return errors.New("nounce does not match")
+	}
+
+	return nil
 }
