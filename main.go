@@ -7,8 +7,8 @@ import (
 	"github.com/alancesar/go-keycloak-sample/internal/jwt"
 	"github.com/alancesar/go-keycloak-sample/internal/nonce"
 	"github.com/alancesar/go-keycloak-sample/pkg"
+	handler2 "github.com/alancesar/go-keycloak-sample/pkg/handler"
 	"github.com/alancesar/go-keycloak-sample/pkg/middleware"
-	"github.com/alancesar/go-keycloak-sample/presenter/handler"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/oauth2"
@@ -54,8 +54,8 @@ func main() {
 	}
 
 	mux := chi.NewMux()
-	mux.Get("/", handler.Login(randomStringFn, config))
-	mux.Get(callbackPath, handler.Authorize(config, verifier))
+	mux.Get("/", handler2.Login(randomStringFn, config))
+	mux.Get(callbackPath, handler2.Authorize(config, verifier))
 	mux.Route("/details", func(r chi.Router) {
 		r.Use(middleware.Authorize(verifier))
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
