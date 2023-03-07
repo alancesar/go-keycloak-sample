@@ -1,20 +1,20 @@
 package handler
 
 import (
+	"crypto/rand"
+	"encoding/base64"
+	"fmt"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
+	"io"
 	"net/http"
 	"time"
 )
 
-type (
-	RandomStringFn func() string
-)
-
-func Login(fn RandomStringFn, config oauth2.Config) http.HandlerFunc {
+func Login(config oauth2.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		state := fn()
-		nonce := fn()
+		state := createRandomString()
+		nonce := createRandomString()
 		setCookie(w, r, "state", state)
 		setCookie(w, r, "nonce", nonce)
 
@@ -31,4 +31,12 @@ func setCookie(w http.ResponseWriter, r *http.Request, name, value string) {
 		HttpOnly: true,
 	}
 	http.SetCookie(w, cookie)
+}
+
+func createRandomString() string {
+	bytes := make([]byte, 16)
+	if _, err := io.ReadFull(rand.Reader, bytes); err != nil {
+		return fmt.Sprintf("%d", time.Now().UnixMilli())
+	}
+	return base64.RawURLEncoding.EncodeToString(bytes)
 }

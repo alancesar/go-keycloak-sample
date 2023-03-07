@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/alancesar/go-keycloak-sample/internal/jwt"
-	"github.com/alancesar/go-keycloak-sample/internal/nonce"
 	"github.com/alancesar/go-keycloak-sample/pkg"
 	handler2 "github.com/alancesar/go-keycloak-sample/pkg/handler"
 	"github.com/alancesar/go-keycloak-sample/pkg/middleware"
@@ -19,14 +18,12 @@ import (
 
 const (
 	callbackPath = "/auth/callback"
-	nonceLength  = 16
 )
 
 var (
-	clientID          = os.Getenv("CLIENT_ID")
-	issuer            = os.Getenv("ISSUER")
-	nonceDefaultValue = os.Getenv("DEFAULT_NONCE")
-	serverAddr        = os.Getenv("SERVER_ADDRESS")
+	clientID   = os.Getenv("CLIENT_ID")
+	issuer     = os.Getenv("ISSUER")
+	serverAddr = os.Getenv("SERVER_ADDRESS")
 )
 
 func main() {
@@ -49,12 +46,8 @@ func main() {
 
 	verifier := jwt.NewVerifier(provider.Verifier(oidcConfig))
 
-	randomStringFn := func() string {
-		return nonce.New(nonceLength, nonceDefaultValue)
-	}
-
 	mux := chi.NewMux()
-	mux.Get("/", handler2.Login(randomStringFn, config))
+	mux.Get("/", handler2.Login(config))
 	mux.Get(callbackPath, handler2.Authorize(config, verifier))
 	mux.Route("/details", func(r chi.Router) {
 		r.Use(middleware.Authorize(verifier))
