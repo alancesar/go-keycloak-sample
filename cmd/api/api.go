@@ -9,12 +9,11 @@ import (
 	"golang.org/x/oauth2"
 	"log"
 	"net/http"
-	"os"
 )
 
-var (
-	clientID = os.Getenv("CLIENT_ID")
-	issuer   = os.Getenv("ISSUER")
+const (
+	clientID = "my-client"
+	issuer   = "http://localhost:8080/realms/playground"
 )
 
 func main() {
