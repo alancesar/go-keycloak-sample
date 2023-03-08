@@ -14,23 +14,25 @@ import (
 func Login(config oauth2.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		state := createRandomString()
+		http.SetCookie(w, &http.Cookie{
+			Name:     stateKey,
+			Value:    state,
+			MaxAge:   int(time.Hour.Seconds()),
+			Secure:   r.TLS != nil,
+			HttpOnly: true,
+		})
+
 		nonce := createRandomString()
-		setCookie(w, r, "state", state)
-		setCookie(w, r, "nonce", nonce)
+		http.SetCookie(w, &http.Cookie{
+			Name:     nonceKey,
+			Value:    nonce,
+			MaxAge:   int(time.Hour.Seconds()),
+			Secure:   r.TLS != nil,
+			HttpOnly: true,
+		})
 
 		http.Redirect(w, r, config.AuthCodeURL(state, oidc.Nonce(nonce)), http.StatusFound)
 	}
-}
-
-func setCookie(w http.ResponseWriter, r *http.Request, name, value string) {
-	cookie := &http.Cookie{
-		Name:     name,
-		Value:    value,
-		MaxAge:   int(time.Hour.Seconds()),
-		Secure:   r.TLS != nil,
-		HttpOnly: true,
-	}
-	http.SetCookie(w, cookie)
 }
 
 func createRandomString() string {

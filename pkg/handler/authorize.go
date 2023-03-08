@@ -8,13 +8,6 @@ import (
 	"net/http"
 )
 
-const (
-	stateKey   = "state"
-	codeKey    = "code"
-	nonceKey   = "nonce"
-	idTokenKey = "id_token"
-)
-
 func Callback(config oauth2.Config, verifier *oidc.IDTokenVerifier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
