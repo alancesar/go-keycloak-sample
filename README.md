@@ -1,6 +1,6 @@
 # Keycloak sample using Golang
 
-The propouse of this project is decribe how authenticate and authorize an
+The proposal of this project is describing how to authenticate and authorize an
 application using Keycloak and Golang.
 
 ## Prerequisites
@@ -12,20 +12,21 @@ application using Keycloak and Golang.
 
 ### Keycloak environment
 
-Start the Keycloak environmet set at `docker-compose.yaml`:
-```shell
-docker-compose up --build 
+Start the Keycloak environment set at `docker-compose.yaml`:
+
+``` shell
+docker-compose up --build
 ```
 
-Create the realm and client:
+Create the realm, client and default user:
 * Login at Keyckoak console following this link: http://localhost:8080;
 * Use `admin` as username and `Pa55w0rd` as password;
 * Create a new realm: Once you have logged in, you will see a dropdown menu in the top left corner of the page.
 Click on it and select _Add Realm_ to create a new one;
 * Fill the Realm Name field with `Playground` and click in _Create_ button;
 * In the left sidebar menu, click in _Clients_ and _Create client_ button;
-* Use `my-client` ad _Client ID_ value and click in _Next_;
-* Keep the currenty values and click in _Next_ again;
+* Use `my-client` as _Client ID_ value and click in _Next_;
+* Keep the currently values and click in _Next_ again;
 * Fill the _Root URL_ field with `http://localhost:9090` and click in _Save_ button;
 * Under the _Settings_ tab, set the _Valid redirect URIs_ as `http://localhost:9090/auth/callback`;
 * In the left sidebar menu, click in _Users_ and _Add user_ button;
@@ -40,8 +41,8 @@ Run the `api.go`:
 go run cmd/api/api.go
 ```
 
-Follow this link and proceed with login steps: http://localhost:8080.
-Once you logged in sucesfully, the API will return the `access_token` and other information.  
+Follow this link and proceed with login steps: [http://localhost:8080](http://localhost:8080/).
+Once you're logged in successfully, the API will return the `access_token` and other information.
 Now you can access an authenticated endpoint `/details` using this token provided:
 
 ```shell
